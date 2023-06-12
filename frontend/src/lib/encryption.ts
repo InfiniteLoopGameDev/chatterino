@@ -137,15 +137,36 @@ function modular_exponentiation(base: bigint, exponent: bigint, modulus: bigint)
     return result
 }
 
-export function rsa_encrypt(m: bigint, e: bigint, n: bigint) {
-    return modular_exponentiation(m, e, n)
+export class PublicKey {
+    n: bigint;
+    e: bigint;
+
+    constructor(n: bigint, e: bigint) {
+        this.n = n;
+        this.e = e;
+    }
 }
 
-export function rsa_decrypt(c: bigint, d: bigint, n: bigint) {
-    return modular_exponentiation(c, d, n)
+export class PrivateKey {
+    n: bigint;
+    d: bigint;
+
+    constructor(n: bigint, d: bigint) {
+        this.n = n;
+        this.d = d;
+    }
 }
 
-export function generate_key_pair(size: number): [{n: bigint, e: bigint}, {n: bigint, d: bigint}]{
+export function rsa_encrypt(m: bigint, key: PublicKey) {
+    return modular_exponentiation(m, key.e, key.n)
+}
+
+export function rsa_decrypt(c: bigint, key: PrivateKey) {
+    return modular_exponentiation(c, key.d, key.n)
+}
+
+
+export function generate_key_pair(size: number): [PublicKey, PrivateKey]{
     let prime_size = size / 2;
     let p = rand_prime(prime_size);
     let q = rand_prime(prime_size);
@@ -153,28 +174,28 @@ export function generate_key_pair(size: number): [{n: bigint, e: bigint}, {n: bi
     let n = p * q;
     let lambda = totient(p, q);
     let e = e_calculation(lambda, {prime_size, p, q});
-    let d = d_calculation(e, lambda);
+    let public_key = new PublicKey(n, e);
 
-    let private_key = {n: n, d: d};
-    let public_key = {n: n, e: e};
+    let d = d_calculation(e, lambda);
+    let private_key = new PrivateKey(n, d);
 
     return [public_key, private_key];
 }
 
-export function encrypt_message(message: string, public_key: {n: bigint, e: bigint}) {
+export function encrypt_message(message: string, public_key: PublicKey) {
     let input_chars = new TextEncoder().encode(message); // Convert the message to an array of numbers
     let num_string = ""
     input_chars.forEach((value) => { // Convert the array of numbers to a string
         num_string += value.toString().padStart(3, "0"); // Pad each number to 3 digits
     });
     let plaintext = BigInt(num_string); // Convert the string to a bigint
-    let ciphertext = rsa_encrypt(plaintext, public_key.e, public_key.n);
+    let ciphertext = rsa_encrypt(plaintext, public_key);
     return message_encode(ciphertext);
 }
 
-export function decrypt_message(message: string, private_key: {n: bigint, d: bigint}) {
+export function decrypt_message(message: string, private_key: PrivateKey) {
     let ciphertext = message_decode(message);
-    let plainint = rsa_decrypt(BigInt(ciphertext), private_key.d, private_key.n);
+    let plainint = rsa_decrypt(BigInt(ciphertext), private_key);
     let plainsting = plainint.toString(); 
     while (plainsting.length % 3 != 0) { // Check if the decoded message is missing leading 0s
         plainsting = "0" + plainsting; // Pad the string with 0s until it is a multiple of 3

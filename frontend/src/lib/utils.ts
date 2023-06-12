@@ -1,3 +1,5 @@
+import { PublicKey, PrivateKey } from "./encryption";
+
 export function bigint_to_uint8array (number: bigint) {
     let hex = number.toString(16); // Convert to hex
     if (hex.length % 2) { hex = "0" + hex; } // Pad with 0 if length is odd
@@ -11,7 +13,7 @@ function uint8array_to_bigint (u8: Uint8Array) {
     let hex = "";
     u8.forEach((byte) => { // Convert to hex
         let byte_hex = byte.toString(16);
-        if (byte_hex.length === 1) { byte_hex = "0" + byte_hex; } // Pad with 0 if length is 1
+        byte_hex = byte_hex.padStart(2, "0") // Pad with 0 if length is 1
         hex += byte_hex;
     });
     return BigInt("0x" + hex); // Convert to bigint
@@ -35,4 +37,34 @@ export function message_encode (text: bigint) {
 export function message_decode (message: string) {
     let u8 = base64_to_uint8array(message); // Convert the base64 string to a Uint8Array
     return uint8array_to_bigint(u8); // Convert the Uint8Array to a number
+}
+export function key_export (key: PublicKey): string
+export function key_export (key: PrivateKey): string
+export function key_export (key: PublicKey | PrivateKey) {
+    let key_type = key.constructor.name; // Get the type of the key
+    let u8n = bigint_to_uint8array(key.n); // Convert n to a Uint8Array
+    let n = uint8array_to_base64(u8n); // Convert n to a base64 string
+    let u8alt: Uint8Array;
+    if (key_type === "PrivateKey") { // If the key is a PrivateKey
+        // @ts-ignore TypeScript doesn't know that class name is checked
+        u8alt = bigint_to_uint8array(key.d); // Convert d to a Uint8Array
+    } else if (key_type === "PublicKey") { // If the key is a PublicKey
+        // @ts-ignore
+        u8alt = bigint_to_uint8array(key.e); // Convert e to a Uint8Array
+    } else { throw new Error("Invalid key type"); }
+    let alt = uint8array_to_base64(u8alt); // Convert e to a base64 string
+    return btoa(`${key_type}.${n}.${alt}`); // Return the base64 strings joined by a period
+}
+
+export function key_import (key: string): PublicKey | PrivateKey {
+    let [key_type, n, alt] = atob(key).split("."); // Split the base64 strings
+    let u8n = base64_to_uint8array(n); // Convert n to a Uint8Array
+    let n_bigint = uint8array_to_bigint(u8n); // Convert n to a bigint
+    let u8alt = base64_to_uint8array(alt); // Convert e to a Uint8Array
+    let alt_bigint = uint8array_to_bigint(u8alt); // Convert e to a bigint
+    if (key_type === "PrivateKey") {
+        return new PrivateKey(n_bigint, alt_bigint); // Return a PrivateKey object
+    } else if (key_type === "PublicKey") {
+        return new PublicKey(n_bigint, alt_bigint); // Return a PublicKey object
+    } else { throw new Error("Invalid key type"); }
 }
