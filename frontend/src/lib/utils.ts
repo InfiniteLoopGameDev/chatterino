@@ -41,15 +41,15 @@ export function message_decode (message: string) {
 export function key_export (key: PublicKey): string
 export function key_export (key: PrivateKey): string
 export function key_export (key: PublicKey | PrivateKey) {
-    let key_type = key.constructor.name; // Get the type of the key
+    let key_type: string;
     let u8n = bigint_to_uint8array(key.n); // Convert n to a Uint8Array
     let n = uint8array_to_base64(u8n); // Convert n to a base64 string
     let u8alt: Uint8Array;
-    if (key_type === "PrivateKey") { // If the key is a PrivateKey
-        // @ts-ignore TypeScript doesn't know that class name is checked
+    if ("d" in key) { // If the key is a PrivateKey
+        key_type = "PrivateKey" // Set key type
         u8alt = bigint_to_uint8array(key.d); // Convert d to a Uint8Array
-    } else if (key_type === "PublicKey") { // If the key is a PublicKey
-        // @ts-ignore
+    } else if ("e" in key) { // If the key is a PublicKey
+        key_type = "PublicKey"
         u8alt = bigint_to_uint8array(key.e); // Convert e to a Uint8Array
     } else { throw new Error("Invalid key type"); }
     let alt = uint8array_to_base64(u8alt); // Convert e to a base64 string
