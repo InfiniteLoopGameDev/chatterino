@@ -7,12 +7,14 @@
 
     let public_key_import: string;
     let private_key_import: string;
+    let encrypt_key_import: string;
 
     const default_n = 86418891819187277695323277220422635771372010987764722610921129897330728349497n;
     let key_size: number = 2048;
 
     let public_key = new encrypt.PublicKey(default_n, 65537n);
     let private_key = new encrypt.PrivateKey(default_n, 30025148644626612648160749230343522231334675156539329375652001692597546836873n);
+    let encrypt_key = new encrypt.PublicKey(default_n, 65537n)
 
     function key_gen() {
         let keys = encrypt.generate_key_pair(key_size);
@@ -25,12 +27,15 @@
         public_key = key_import(public_key_import);
         // @ts-ignore 
         private_key = key_import(private_key_import);
+        // @ts-ignore
+        encrypt_key = key_import(encrypt_key_import);
     }
 
-    $: en_output = encrypt.encrypt_message(en_input, public_key)
+    $: en_output = encrypt.encrypt_message(en_input, encrypt_key)
     $: de_output = encrypt.decrypt_message(de_input, private_key)
 
     $: public_key_export = key_export(public_key);
+    $: encrypt_key_export = key_export(encrypt_key);
     $: private_key_export = key_export(private_key);
 </script>
 
@@ -48,9 +53,15 @@
 <button on:click={key_gen}>Generate Key <input type="number" bind:value={key_size}></button>
 <br>
 <h1>Export Keys</h1>
+Your Keys:
 <p>Public key: <textarea bind:value={public_key_export} rows="4" cols="55"></textarea></p>
 <p>Private key: <textarea bind:value={private_key_export} rows="4" cols="55"></textarea></p>
+Others key:
+<p>Public key: <textarea bind:value={encrypt_key_export} rows="4" cols="55"></textarea></p>
 <h1>Import Keys</h1>
+Your Keys:
 <p>Public key: <textarea bind:value={public_key_import} rows="4" cols="55"></textarea></p>
 <p>Private key: <textarea bind:value={private_key_import} rows="4" cols="55"></textarea></p>
+Others key:
+<p>Public key: <textarea bind:value={encrypt_key_import} rows="4" cols="55"></textarea></p>
 <button on:click={import_keys}>Import</button>
