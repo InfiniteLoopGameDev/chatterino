@@ -137,6 +137,7 @@ function modular_exponentiation(base: bigint, exponent: bigint, modulus: bigint)
     return result
 }
 
+//TODO: Implement import constructor and export function 
 export class PublicKey {
     n: bigint;
     e: bigint;
@@ -184,11 +185,8 @@ export function generate_key_pair(size: number): [PublicKey, PrivateKey]{
 
 export function encrypt_message(message: string, public_key: PublicKey) {
     let input_chars = new TextEncoder().encode(message); // Convert the message to an array of numbers
-    let num_string = ""
-    input_chars.forEach((value) => { // Convert the array of numbers to a string
-        num_string += value.toString().padStart(3, "0"); // Pad each number to 3 digits
-    });
-    let plaintext = BigInt(num_string); // Convert the string to a bigint
+    let char_buffer = '0x' + Array.from(input_chars).map(x => x.toString(16).padStart(2, '0')).join(''); // Convert each to hex then join
+    let plaintext = BigInt(char_buffer); // Convert the string to a bigint
     let ciphertext = rsa_encrypt(plaintext, public_key);
     return message_encode(ciphertext);
 }
@@ -196,12 +194,9 @@ export function encrypt_message(message: string, public_key: PublicKey) {
 export function decrypt_message(message: string, private_key: PrivateKey) {
     let ciphertext = message_decode(message);
     let plainint = rsa_decrypt(BigInt(ciphertext), private_key);
-    let plainsting = plainint.toString(); 
-    while (plainsting.length % 3 != 0) { // Check if the decoded message is missing leading 0s
-        plainsting = "0" + plainsting; // Pad the string with 0s until it is a multiple of 3
-    }
-    let plaintext = plainsting.match(/.{1,3}/g) // Split the string into an array of 3 digit strings
-    if (plaintext === null) throw new Error("Invalid ciphertext");
-    let output_chars = plaintext.map((value) => parseInt(value)) // Convert the array of 3 digit string to an array of numbers
-    return new TextDecoder().decode(new Uint8Array(output_chars)); // Convert the array of numbers to a string
+    let plainhex = plainint.toString(16); // Convert the message to hex
+    let chars_array = plainhex.match(/.{1,2}/g);
+    if (chars_array === null) throw new Error("Invalid ciphertext");
+    let plaintext = new TextDecoder().decode(Uint8Array.from(chars_array.map((byte) => parseInt(byte, 16)))); // Convert hex to array of numbers then to a string
+    return plaintext;
 }

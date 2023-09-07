@@ -1,9 +1,10 @@
 <script lang="ts">
     import * as encrypt from "$lib/encryption";
     import { key_export, key_import } from "$lib/utils";
+    import * as rc6 from "$lib/rc6";
             
     let en_input: string = "Hello World";
-    let de_input: string = "D/GPgd5SVNosqoNV4gntnMqikeYmh4Sa6auIOM9yRKg=";
+    let de_input: string = "S74GBCpAjmzjDQOKcgFe6I7j43Vwjwez3KSAjSweQVg=";
 
     let public_key_import: string;
     let private_key_import: string;
@@ -11,6 +12,7 @@
 
     const default_n = 86418891819187277695323277220422635771372010987764722610921129897330728349497n;
     let key_size: number = 2048;
+    let max_length = key_size / 8;
 
     let public_key = new encrypt.PublicKey(default_n, 65537n);
     let private_key = new encrypt.PrivateKey(default_n, 30025148644626612648160749230343522231334675156539329375652001692597546836873n);
@@ -37,6 +39,11 @@
     $: public_key_export = key_export(public_key);
     $: encrypt_key_export = key_export(encrypt_key);
     $: private_key_export = key_export(private_key);
+
+    let rc6descript = new rc6.RC6Descriptor(16, 12, 2)
+    console.log(
+        new rc6.RC6Key(new Uint8Array([25, 87, 47]), rc6descript)
+    )
 </script>
 
 

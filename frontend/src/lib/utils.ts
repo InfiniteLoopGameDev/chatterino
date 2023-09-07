@@ -38,9 +38,10 @@ export function message_decode (message: string) {
     let u8 = base64_to_uint8array(message); // Convert the base64 string to a Uint8Array
     return uint8array_to_bigint(u8); // Convert the Uint8Array to a number
 }
-export function key_export (key: PublicKey): string
-export function key_export (key: PrivateKey): string
-export function key_export (key: PublicKey | PrivateKey) {
+
+type Key = PublicKey | PrivateKey
+
+export function key_export (key: Key) {
     let key_type: string;
     let u8n = bigint_to_uint8array(key.n); // Convert n to a Uint8Array
     let n = uint8array_to_base64(u8n); // Convert n to a base64 string
