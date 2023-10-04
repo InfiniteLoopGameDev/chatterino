@@ -57,7 +57,7 @@ export function key_export (key: Key) {
     return btoa(`${key_type}.${n}.${alt}`); // Return the base64 strings joined by a period
 }
 
-export function key_import (key: string): PublicKey | PrivateKey {
+export function key_import (key: string): Key {
     let [key_type, n, alt] = atob(key).split("."); // Split the base64 strings
     let u8n = base64_to_uint8array(n); // Convert n to a Uint8Array
     let n_bigint = uint8array_to_bigint(u8n); // Convert n to a bigint
