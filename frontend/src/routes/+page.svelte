@@ -40,10 +40,11 @@
     $: encrypt_key_export = key_export(encrypt_key);
     $: private_key_export = key_export(private_key);
 
-    let rc6descript = new rc6.RC6Descriptor(16, 12, 2)
-    console.log(
-        new rc6.RC6Key(new Uint8Array([25, 87, 47]), rc6descript)
-    )
+    let rc6descript = new rc6.RC6Descriptor(16, 14, 16)
+    let rc6key = new rc6.RC6Key([25n, 44n, 47n], rc6descript)
+    let rc6cipher = rc6.rc6_encrypt([111n, 222n, 333n, 444n], rc6key);
+    console.log(rc6cipher);
+    console.log(rc6.rc6_decrypt(rc6cipher, rc6key));
 </script>
 
 
