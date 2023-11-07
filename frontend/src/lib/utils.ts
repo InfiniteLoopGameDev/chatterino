@@ -1,4 +1,5 @@
-import { PublicKey, PrivateKey } from "./encryption";
+import type { Key } from "./rsa";
+import { PrivateKey, PublicKey } from "./rsa";
 
 export function bigint_to_uint8array (number: bigint) {
     let hex = number.toString(16); // Convert to hex
@@ -39,8 +40,6 @@ export function message_decode (message: string) {
     return uint8array_to_bigint(u8); // Convert the Uint8Array to a number
 }
 
-type Key = PublicKey | PrivateKey
-
 export function key_export (key: Key) {
     let key_type: string;
     let u8n = bigint_to_uint8array(key.n); // Convert n to a Uint8Array
@@ -68,4 +67,28 @@ export function key_import (key: string): Key {
     } else if (key_type === "PublicKey") {
         return new PublicKey(n_bigint, alt_bigint); // Return a PublicKey object
     } else { throw new Error("Invalid key type"); }
+}
+
+export function rotate_left(number: bigint, shifts: bigint, size: number) {
+    let bitMask = BigInt((1 << size) - 1);
+    number = number & bitMask
+    shifts = shifts % BigInt(size);
+    return ((number << shifts) & bitMask) | ((number) >> (BigInt(size) - shifts))
+}
+
+export function rotate_right(number: bigint, shifts: bigint, size: number) {
+    let bitMask = BigInt((1 << size) - 1);
+    number = number & bitMask
+    shifts = shifts % BigInt(size);
+    return (number >> shifts) | (((number) << (BigInt(size) - shifts)) & bitMask)
+}
+
+export function split_chunks<T>(array: T[], chunk_size: number): T[][] {
+    const n = Math.ceil(array.length / chunk_size);
+    return Array.from({ length: n }, (v,i) => 
+        array.slice(i * chunk_size, i * chunk_size + chunk_size))
+}
+
+export function xor_array(array_1: bigint[], array_2: bigint[]): bigint[] {
+    return [... array_1].map( (x, i) => x ^ array_2[i])
 }

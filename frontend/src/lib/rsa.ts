@@ -137,6 +137,8 @@ function modular_exponentiation(base: bigint, exponent: bigint, modulus: bigint)
     return result
 }
 
+export type Key = PublicKey | PrivateKey
+
 //TODO: Implement import constructor and export function 
 export class PublicKey {
     n: bigint;

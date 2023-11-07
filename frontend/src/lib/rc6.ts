@@ -1,16 +1,5 @@
-function rotate_left(number: bigint, shifts: bigint, size: number) {
-    let bitMask = BigInt((1 << size) - 1);
-    number = number & bitMask
-    shifts = shifts % BigInt(size);
-    return ((number << shifts) & bitMask) | ((number) >> (BigInt(size) - shifts))
-}
-
-function rotate_right(number: bigint, shifts: bigint, size: number) {
-    let bitMask = BigInt((1 << size) - 1);
-    number = number & bitMask
-    shifts = shifts % BigInt(size);
-    return (number >> shifts) | (((number) << (BigInt(size) - shifts)) & bitMask)
-}
+import { blank_object } from "svelte/internal";
+import {rotate_left, rotate_right, split_chunks, xor_array} from "./utils";
 
 const P: { [key: number]: bigint } = {16: 0xb7e1n, 32: 0xb7e15163n, 64: 0xb7e151628aed2a6bn}
 const Q: { [key: number]: bigint } = {16: 0x9e37n, 32: 0x9e3779b9n, 64: 0x9e3779b97f4a7c15n}
@@ -35,9 +24,9 @@ export class RC6Key {
     constructor(input: bigint[], descriptor: RC6Descriptor) {
         this.descriptor = descriptor;
         let keyLength = 2 * descriptor.rounds + 3;
-        this.modulo = BigInt(1 << descriptor.wordLength);
-        let fill = Array<number>(this.descriptor.keySize - input.length).fill(0);
-        let bigIntKey = Array.from([...input, ...fill]).map(BigInt);
+        this.modulo = 1n << BigInt(descriptor.wordLength);
+        let fill = Array<bigint>(this.descriptor.keySize - input.length).fill(0n);
+        let bigIntKey = Array.from([...input, ...fill]);
 
         this.S = new Array<bigint>(keyLength + 1);
 
@@ -59,7 +48,7 @@ export class RC6Key {
     }
 }
 
-export function rc6_encrypt(plaintext: bigint[], key: RC6Key): bigint[] {
+export function encrypt_block(plaintext: bigint[], key: RC6Key): bigint[] {
     let wordLength = key.descriptor.wordLength;
     let rounds = key.descriptor.rounds;
     let lgw = BigInt(Math.log2(wordLength));
@@ -80,7 +69,7 @@ export function rc6_encrypt(plaintext: bigint[], key: RC6Key): bigint[] {
     return [A, B, C, D];
 }
 
-export function rc6_decrypt(ciphertext: bigint[], key: RC6Key): bigint[] {
+export function decrypt_block(ciphertext: bigint[], key: RC6Key): bigint[] {
     let wordLength = key.descriptor.wordLength;
     let rounds = key.descriptor.rounds;
     let lgw = BigInt(Math.log2(wordLength));
@@ -99,4 +88,34 @@ export function rc6_decrypt(ciphertext: bigint[], key: RC6Key): bigint[] {
     B = (B - key.S[0]) % key.modulo;
 
     return [A, B, C, D];
+}
+
+export function cbc_encrypt(plaintext: bigint[], key: RC6Key): bigint[] {
+    let padd = Array<bigint>(plaintext.length % 4).fill(0n);
+    plaintext = [...plaintext, ...padd];
+    let blocks = split_chunks(plaintext, 4);
+    let cipherblocks = Array<Array<bigint>>(blocks.length);
+
+    let iv = [0n, 0n, 0n, 0n]; // TODO: Create IV sharing scheme (If i forget this i am stupid)
+
+    // First Term
+    let working_array = xor_array(blocks[0], iv);
+    cipherblocks[0] = encrypt_block(working_array, key);
+
+    for (let i = 1; i < blocks.length; i++) {
+        working_array = xor_array(blocks[i], cipherblocks[i - 1]);
+        cipherblocks[i] = encrypt_block(working_array, key);
+    }
+
+    return cipherblocks.flat()
+}
+
+export function cbc_decrypt(ciphertext: bigint[], key: RC6Key): bigint[] {
+    let blocks = split_chunks(ciphertext, 4);
+    let plainblocks = Array<Array<bigint>>(blocks.length);
+
+    let iv = [0n, 0n, 0n, 0n];
+    let cipherblocks = [iv, ...blocks];
+
+    return [...blocks].map( (x, i) => xor_array(decrypt_block(x, key), cipherblocks[i])).flat()
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import * as encrypt from "$lib/encryption";
+    import * as encrypt from "$lib/rsa";
     import { key_export, key_import } from "$lib/utils";
     import * as rc6 from "$lib/rc6";
             
@@ -42,9 +42,10 @@
 
     let rc6descript = new rc6.RC6Descriptor(16, 14, 16)
     let rc6key = new rc6.RC6Key([25n, 44n, 47n], rc6descript)
-    let rc6cipher = rc6.rc6_encrypt([111n, 222n, 333n, 444n], rc6key);
+    let rc6message = [111n, 222n, 333n, 444n, 555n, 666n, 777n, 888n]
+    let rc6cipher = rc6.cbc_encrypt(rc6message, rc6key)
     console.log(rc6cipher);
-    console.log(rc6.rc6_decrypt(rc6cipher, rc6key));
+    console.log(rc6.cbc_decrypt(rc6cipher, rc6key));
 </script>
 
 
