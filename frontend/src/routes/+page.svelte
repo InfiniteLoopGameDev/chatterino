@@ -2,6 +2,9 @@
     import * as encrypt from "$lib/rsa";
     import { key_export, key_import } from "$lib/utils";
     import * as rc6 from "$lib/rc6";
+    import { greet } from "rc6lib";
+
+    greet("WASM");
             
     let en_input: string = "Hello World";
     let de_input: string = "S74GBCpAjmzjDQOKcgFe6I7j43Vwjwez3KSAjSweQVg=";
