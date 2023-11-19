@@ -70,20 +70,20 @@ export function key_import (key: string): Key {
 }
 
 export function rotate_left(number: bigint, shifts: bigint, size: number) {
-    let bitMask = BigInt((1 << size) - 1);
+    let bitMask = (1n << BigInt(size)) - 1n;
     number = number & bitMask
     shifts = shifts % BigInt(size);
     return ((number << shifts) & bitMask) | ((number) >> (BigInt(size) - shifts))
 }
 
 export function rotate_right(number: bigint, shifts: bigint, size: number) {
-    let bitMask = BigInt((1 << size) - 1);
+    let bitMask = (1n << BigInt(size)) - 1n;
     number = number & bitMask
     shifts = shifts % BigInt(size);
     return (number >> shifts) | (((number) << (BigInt(size) - shifts)) & bitMask)
 }
 
-export function split_chunks<T>(array: T[], chunk_size: number): T[][] {
+export function split_chunks(array: bigint[], chunk_size: number): bigint[][] {
     const n = Math.ceil(array.length / chunk_size);
     return Array.from({ length: n }, (v,i) => 
         array.slice(i * chunk_size, i * chunk_size + chunk_size))

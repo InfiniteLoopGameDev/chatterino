@@ -11,7 +11,7 @@
 	},
 	"dependencies": {
 		"rc6lib": "^0.1.0"
-	  },
+	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^2.0.0",
 		"@sveltejs/adapter-static": "^2.0.2",

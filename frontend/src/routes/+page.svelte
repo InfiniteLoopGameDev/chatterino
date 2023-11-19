@@ -43,12 +43,12 @@
     $: encrypt_key_export = key_export(encrypt_key);
     $: private_key_export = key_export(private_key);
 
-    let rc6descript = new rc6.RC6Descriptor(16, 14, 16)
+    let rc6descript = new rc6.RC6Descriptor(16, 1, 16)
     let rc6key = new rc6.RC6Key([25n, 44n, 47n], rc6descript)
-    let rc6message = [111n, 222n, 333n, 444n, 555n, 666n, 777n, 888n]
-    let rc6cipher = rc6.cbc_encrypt(rc6message, rc6key)
+    let rc6message = [111n, 222n, 333n, 444n]
+    let rc6cipher = rc6.encrypt_block(rc6message, rc6key)
     console.log(rc6cipher);
-    console.log(rc6.cbc_decrypt(rc6cipher, rc6key));
+    console.log(rc6.decrypt_block(rc6cipher, rc6key));
 </script>
 
 
