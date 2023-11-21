@@ -1,4 +1,4 @@
-import { blank_object } from "svelte/internal";
+import * as wasm from "rc6lib"
 import {rotate_left, rotate_right, split_chunks, xor_array} from "./utils";
 
 const P: { [key: number]: bigint } = {16: 0xb7e1n, 32: 0xb7e15163n, 64: 0xb7e151628aed2a6bn}
@@ -39,7 +39,7 @@ export class RC6Key {
         let A = 0n, B = 0n, i = 0, j = 0;
 
         let v = 3 * Math.max(keyLength + 1, bigIntKey.length);
-        for (let s = 1; s <= v; s++) {
+        for (let s = 0; s < v; s++) {
             A = this.S[i] = rotate_left((this.S[i] + A + B) % this.modulo, 3n, descriptor.wordLength);
             B = bigIntKey[j] = rotate_left((bigIntKey[j] + A + B) % this.modulo, (A + B) % this.modulo, descriptor.wordLength);
             i = ((i + 1) % keyLength + 1);
@@ -48,7 +48,7 @@ export class RC6Key {
     }
 }
 
-export function encrypt_block(plaintext: bigint[], key: RC6Key): bigint[] {
+/* export function encrypt_block(plaintext: bigint[], key: RC6Key): bigint[] {
     let wordLength = key.descriptor.wordLength;
     let rounds = key.descriptor.rounds;
     let lgw = BigInt(Math.log2(wordLength));
@@ -77,7 +77,7 @@ export function decrypt_block(ciphertext: bigint[], key: RC6Key): bigint[] {
 
     C = (C - key.S[2 * rounds + 3]) % key.modulo;
     A = (A - key.S[2 * rounds + 2]) % key.modulo;
-    for (let i = rounds; i >= 1; i--) {
+    for (let i = rounds; i > 0; i--) {
         [A, B, C, D] = [D, A, B, C]
         let u = rotate_left((D * ((2n * D + 1n) % key.modulo)) % key.modulo, lgw, wordLength);
         let t = rotate_left((B * ((2n * B + 1n) % key.modulo)) % key.modulo, lgw, wordLength);
@@ -88,6 +88,14 @@ export function decrypt_block(ciphertext: bigint[], key: RC6Key): bigint[] {
     B = (B - key.S[0]) % key.modulo;
 
     return [A, B, C, D];
+} */
+
+export function encrypt_block(plaintext: bigint[], key: RC6Key): bigint[] {
+    return Array.from(wasm.encrypt_block(Uint32Array.from(plaintext.map(Number)), Uint32Array.from(key.S.map(Number)), key.descriptor.rounds)).map(BigInt)
+}
+
+export function decrypt_block(ciphertext: bigint[], key: RC6Key): bigint[] {
+    return Array.from(wasm.decrypt_block(Uint32Array.from(ciphertext.map(Number)), Uint32Array.from(key.S.map(Number)), key.descriptor.rounds)).map(BigInt)
 }
 
 export function cbc_encrypt(plaintext: bigint[], key: RC6Key): bigint[] {

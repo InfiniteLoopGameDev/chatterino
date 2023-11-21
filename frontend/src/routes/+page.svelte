@@ -2,10 +2,7 @@
     import * as encrypt from "$lib/rsa";
     import { key_export, key_import } from "$lib/utils";
     import * as rc6 from "$lib/rc6";
-    import { greet } from "rc6lib";
-
-    greet("WASM");
-            
+      
     let en_input: string = "Hello World";
     let de_input: string = "S74GBCpAjmzjDQOKcgFe6I7j43Vwjwez3KSAjSweQVg=";
 
@@ -43,12 +40,12 @@
     $: encrypt_key_export = key_export(encrypt_key);
     $: private_key_export = key_export(private_key);
 
-    let rc6descript = new rc6.RC6Descriptor(16, 1, 16)
-    let rc6key = new rc6.RC6Key([25n, 44n, 47n], rc6descript)
-    let rc6message = [111n, 222n, 333n, 444n]
-    let rc6cipher = rc6.encrypt_block(rc6message, rc6key)
+    let rc6descript = new rc6.RC6Descriptor(32, 14, 16)
+    let rc6key = new rc6.RC6Key([25n, 44n, 48n, 6611n], rc6descript)
+    let rc6message = [111n, 222n, 333n, 444n, 555n, 666n, 777n, 888n]
+    let rc6cipher = rc6.cbc_encrypt(rc6message, rc6key)
     console.log(rc6cipher);
-    console.log(rc6.decrypt_block(rc6cipher, rc6key));
+    console.log(rc6.cbc_decrypt(rc6cipher, rc6key));
 </script>
 
 
