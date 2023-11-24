@@ -13,7 +13,7 @@ pub fn keygen(input: &[u64], rounds: i32) -> Vec<u64> {
     let input_length = input.len();
     let key_length: u64 = 2 * rounds as u64 + 3;
 
-    let mut s: Vec<u64> = vec![key_length];
+    let mut s: Vec<u64> = vec![0; key_length as usize + 1];
 
     s[0] = P;
 

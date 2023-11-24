@@ -89,6 +89,13 @@ export function split_chunks(array: BigUint64Array, chunk_size: number): BigUint
         array.slice(i * chunk_size, i * chunk_size + chunk_size))
 }
 
-export function xor_array(array_1: BigUint64Array, array_2: BigUint64Array): BigUint64Array {
-    return new BigUint64Array(array_1).map( (x, i) => x ^ array_2[i])
+export function xor_array(array1: BigUint64Array, array2: BigUint64Array): BigUint64Array {
+    return new BigUint64Array(array1).map( (x, i) => x ^ array2[i])
+}
+
+export function merge_uint64_array(array1: BigUint64Array, array2: BigUint64Array): BigUint64Array {
+    var mergedArray = new BigUint64Array(array1.length + array2.length);
+    mergedArray.set(array1);
+    mergedArray.set(array2, array1.length);
+    return mergedArray
 }
