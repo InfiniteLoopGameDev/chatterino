@@ -48,74 +48,31 @@ export class RC6Key {
     }
 }
 
-/* export function encrypt_block(plaintext: bigint[], key: RC6Key): bigint[] {
-    let wordLength = key.descriptor.wordLength;
-    let rounds = key.descriptor.rounds;
-    let lgw = BigInt(Math.log2(wordLength));
-    let [A, B, C, D] = plaintext;
-
-    B = (B + key.S[0]) % key.modulo;
-    D = (D + key.S[1]) % key.modulo;
-    for (let i = 1; i <= rounds; i++) {
-        let t = rotate_left((B * ((2n * B + 1n) % key.modulo)) % key.modulo, lgw, wordLength);
-        let u = rotate_left((D * ((2n * D + 1n) % key.modulo)) % key.modulo, lgw, wordLength);
-        A = (rotate_left(A ^ t, u, wordLength) + key.S[2 * i]) % key.modulo;
-        C = (rotate_left(C ^ u, t, wordLength) + key.S[2 * i + 1]) % key.modulo;
-        [A, B, C, D] = [B, C, D, A]
-    }
-    A = (A + key.S[2 * rounds + 2]) % key.modulo;
-    C = (C + key.S[2 * rounds + 3]) % key.modulo;
-
-    return [A, B, C, D];
+export function encrypt_block(plaintext: BigUint64Array, key: RC6Key): BigUint64Array {
+    return wasm.encrypt_block(plaintext, key.S, key.descriptor.rounds);
 }
 
-export function decrypt_block(ciphertext: bigint[], key: RC6Key): bigint[] {
-    let wordLength = key.descriptor.wordLength;
-    let rounds = key.descriptor.rounds;
-    let lgw = BigInt(Math.log2(wordLength));
-    let [A, B, C, D] = ciphertext;
-
-    C = (C - key.S[2 * rounds + 3]) % key.modulo;
-    A = (A - key.S[2 * rounds + 2]) % key.modulo;
-    for (let i = rounds; i > 0; i--) {
-        [A, B, C, D] = [D, A, B, C]
-        let u = rotate_left((D * ((2n * D + 1n) % key.modulo)) % key.modulo, lgw, wordLength);
-        let t = rotate_left((B * ((2n * B + 1n) % key.modulo)) % key.modulo, lgw, wordLength);
-        C = rotate_right((C - key.S[2 * i + 1]) % key.modulo, t, wordLength) ^ u;
-        A = rotate_right((A - key.S[2 * i]) % key.modulo, u, wordLength) ^ t;
-    }
-    D = (D - key.S[1]) % key.modulo;
-    B = (B - key.S[0]) % key.modulo;
-
-    return [A, B, C, D];
-} */
-
-export function encrypt_block(plaintext: bigint[], key: RC6Key): bigint[] {
-    return Array.from(wasm.encrypt_block(Uint32Array.from(plaintext.map(Number)), Uint32Array.from(key.S.map(Number)), key.descriptor.rounds)).map(BigInt)
+export function decrypt_block(ciphertext: BigUint64Array, key: RC6Key): BigUint64Array {
+    return wasm.decrypt_block(ciphertext, key.S, key.descriptor.rounds)
 }
 
-export function decrypt_block(ciphertext: bigint[], key: RC6Key): bigint[] {
-    return Array.from(wasm.decrypt_block(Uint32Array.from(ciphertext.map(Number)), Uint32Array.from(key.S.map(Number)), key.descriptor.rounds)).map(BigInt)
-}
-
-export function cbc_encrypt(plaintext: bigint[], key: RC6Key): bigint[] {
-    let padd = Array<bigint>(plaintext.length % 4).fill(0n);
-    plaintext = [...plaintext, ...padd];
+export function cbc_encrypt(plaintext: BigUint64Array, key: RC6Key): bigint[] {
+    plaintext.fill(0n, -1, -(plaintext.length % 4));
     let blocks = split_chunks(plaintext, 4);
-    let cipherblocks = Array<Array<bigint>>(blocks.length);
+    let cipherblocks =  new Array<BigUint64Array>(blocks.length);
 
-    let iv = [0n, 0n, 0n, 0n]; // TODO: Create IV sharing scheme (If i forget this i am stupid)
+    let iv = new BigUint64Array([0n, 0n, 0n, 0n]); // TODO: Create IV sharing scheme (If i forget this i am stupid)
 
     // First Term
     let working_array = xor_array(blocks[0], iv);
-    cipherblocks[0] = encrypt_block(working_array, key);
+    cipherblocks[0] = encrypt_block(working_array, key) ;
 
     for (let i = 1; i < blocks.length; i++) {
         working_array = xor_array(blocks[i], cipherblocks[i - 1]);
         cipherblocks[i] = encrypt_block(working_array, key);
     }
 
-    return cipherblocks.flat()
+    return cipherblocks.reduce((a, b) => [...a, ...b], [])
 }
 
 export function cbc_decrypt(ciphertext: bigint[], key: RC6Key): bigint[] {

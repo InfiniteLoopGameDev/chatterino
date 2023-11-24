@@ -83,12 +83,12 @@ export function rotate_right(number: bigint, shifts: bigint, size: number) {
     return (number >> shifts) | (((number) << (BigInt(size) - shifts)) & bitMask)
 }
 
-export function split_chunks(array: bigint[], chunk_size: number): bigint[][] {
-    const n = Math.ceil(array.length / chunk_size);
+export function split_chunks(array: BigUint64Array, chunk_size: number): BigUint64Array[] {
+    const n = Math.ceil(array.length /chunk_size);
     return Array.from({ length: n }, (v,i) => 
         array.slice(i * chunk_size, i * chunk_size + chunk_size))
 }
 
-export function xor_array(array_1: bigint[], array_2: bigint[]): bigint[] {
-    return [... array_1].map( (x, i) => x ^ array_2[i])
+export function xor_array(array_1: BigUint64Array, array_2: BigUint64Array): BigUint64Array {
+    return new BigUint64Array(array_1).map( (x, i) => x ^ array_2[i])
 }
