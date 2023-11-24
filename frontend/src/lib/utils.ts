@@ -1,6 +1,19 @@
 import type { Key } from "./rsa";
 import { PrivateKey, PublicKey } from "./rsa";
 
+// Hacky but it works
+type TypedArray = ArrayLike<any> & {
+    BYTES_PER_ELEMENT: number;
+    set(array: ArrayLike<number | bigint>, offset?: number): void;
+    fill(value: number | bigint, start?: number, end?: number): void;
+};
+type TypedArrayConstructor<T> = {
+    new (): T;
+    new (size: number): T;
+    new (buffer: ArrayBuffer): T;
+    BYTES_PER_ELEMENT: number;
+}
+
 export function bigint_to_uint8array (number: bigint) {
     let hex = number.toString(16); // Convert to hex
     if (hex.length % 2) { hex = "0" + hex; } // Pad with 0 if length is odd
@@ -20,12 +33,12 @@ function uint8array_to_bigint (u8: Uint8Array) {
     return BigInt("0x" + hex); // Convert to bigint
 }
 
-function uint8array_to_base64 (u8: Uint8Array) {
+export function uint8array_to_base64 (u8: Uint8Array) {
     let reduced = u8.reduce((acc, cur) => acc + String.fromCharCode(cur), ""); // Convert to string
     return btoa(reduced); // Convert to base64
 }
 
-function base64_to_uint8array (base64: string) {
+export function base64_to_uint8array (base64: string) {
     let reduced = atob(base64).split("").map((char) => char.charCodeAt(0)); // Convert to Uint8Array
     return new Uint8Array(reduced);
 }
@@ -98,4 +111,11 @@ export function merge_uint64_array(array1: BigUint64Array, array2: BigUint64Arra
     mergedArray.set(array1);
     mergedArray.set(array2, array1.length);
     return mergedArray
+}
+
+export function padd_typed_array<T extends TypedArray>(array: T, length: number): T {
+    let paddedArray = new (array.constructor as TypedArrayConstructor<T>)(length);
+    paddedArray.set(array);
+    paddedArray.fill(array[0].constructor(0), array.length);
+    return paddedArray
 }

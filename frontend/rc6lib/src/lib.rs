@@ -1,3 +1,5 @@
+extern crate console_error_panic_hook;
+use std::panic;
 use std::usize;
 use wasm_bindgen::prelude::*;
 
@@ -9,6 +11,7 @@ const Q: u64 = 0x9e3779b97f4a7c15;
 #[wasm_bindgen]
 #[no_mangle]
 pub fn keygen(input: &[u64], rounds: i32) -> Vec<u64> {
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
     let mut input_array = input.to_vec();
     let input_length = input.len();
     let key_length: u64 = 2 * rounds as u64 + 3;

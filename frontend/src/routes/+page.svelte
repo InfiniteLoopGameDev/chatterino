@@ -42,10 +42,10 @@
 
     let rc6descript = new rc6.RC6Descriptor(64, 14, 16)
     let rc6key = new rc6.RC6Key(new BigUint64Array([25n, 44n, 48n, 6611n]), rc6descript);
-    let rc6message = new BigUint64Array([111n, 222n, 333n, 444n, 555n, 666n, 777n, 888n]);
-    let rc6cipher = rc6.cbc_encrypt(rc6message, rc6key)
+    let rc6message = "Hello World";
+    let rc6cipher = rc6.encrypt_message(rc6message, rc6key)
     console.log(rc6cipher);
-    console.log(rc6.cbc_decrypt(rc6cipher, rc6key));
+    console.log(rc6.decrypt_message(rc6cipher, rc6key));
 </script>
 
 
