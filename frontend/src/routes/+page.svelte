@@ -2,6 +2,7 @@
     import * as encrypt from "$lib/rsa";
     import { key_export, key_import } from "$lib/utils";
     import * as rc6 from "$lib/rc6";
+    import * as vsh from "$lib/vsh"
       
     let en_input: string = "Hello World";
     let de_input: string = "S74GBCpAjmzjDQOKcgFe6I7j43Vwjwez3KSAjSweQVg=";
@@ -46,6 +47,8 @@
     let rc6cipher = rc6.encrypt_message(rc6message, rc6key)
     console.log(rc6cipher);
     console.log(rc6.decrypt_message(rc6cipher, rc6key));
+
+    console.log(vsh.hash_string("Hi Bob!"))
 </script>
 
 

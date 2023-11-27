@@ -2,6 +2,10 @@ import type { Key } from "./rsa";
 import { PrivateKey, PublicKey } from "./rsa";
 
 // Hacky but it works
+type IArray = ArrayLike<any> & {
+    slice(begin: number, end?: number): IArray;
+}
+
 type TypedArray = ArrayLike<any> & {
     BYTES_PER_ELEMENT: number;
     set(array: ArrayLike<number | bigint>, offset?: number): void;
@@ -23,7 +27,7 @@ export function bigint_to_uint8array (number: bigint) {
     return u8;
 }
 
-function uint8array_to_bigint (u8: Uint8Array) {
+export function uint8array_to_bigint (u8: Uint8Array) {
     let hex = "";
     u8.forEach((byte) => { // Convert to hex
         let byte_hex = byte.toString(16);
@@ -96,10 +100,10 @@ export function rotate_right(number: bigint, shifts: bigint, size: number) {
     return (number >> shifts) | (((number) << (BigInt(size) - shifts)) & bitMask)
 }
 
-export function split_chunks(array: BigUint64Array, chunk_size: number): BigUint64Array[] {
+export function split_chunks<T extends IArray>(array: T, chunk_size: number): T[] {
     const n = Math.ceil(array.length /chunk_size);
     return Array.from({ length: n }, (v,i) => 
-        array.slice(i * chunk_size, i * chunk_size + chunk_size))
+        array.slice(i * chunk_size, i * chunk_size + chunk_size) as T)
 }
 
 export function xor_array(array1: BigUint64Array, array2: BigUint64Array): BigUint64Array {

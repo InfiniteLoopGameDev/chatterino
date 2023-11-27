@@ -1,13 +1,13 @@
-import {message_encode, message_decode} from "./utils";
+import {message_encode, message_decode, uint8array_to_bigint, bigint_to_uint8array} from "./utils";
 
 const big_abs = (n: bigint) => (n < 0n) ? -n : n; // Absolute value function for bigints
 const big_max = (a: bigint, b: bigint) => (a > b) ? a : b; // Largest value function for bigints
 
-function rand_bytes(size: number) {
+function rand_bytes(size: number): bigint {
     let buffer = new ArrayBuffer(size); // Create a buffer of the correct size
     let array = new BigUint64Array(buffer); 
     crypto.getRandomValues(array); // Fill the buffer with random values
-    return array.join(""); // Join the values into a string
+    return BigInt(array.join("")); // Join the values into a string
 }
 
 // Miller–Rabin primality test
@@ -40,12 +40,12 @@ function probable_prime(n: bigint): boolean {
 
 function rand_prime(size: number) {
     let rand_size = size / 8 // Size in bytes 
-    let rand = BigInt(rand_bytes(rand_size));
-    rand |= BigInt(1 << (size - 1)); // Set the most significant bit (Used to ensure the number is the correct size)
+    let rand = rand_bytes(rand_size);
+    rand |= 1n << (BigInt(size) - 1n); // Set the most significant bit (Used to ensure the number is the correct size)
     rand |= 1n; // Set the least significant bit (Used to ensure the number is odd (even numbers are not prime)))
     console.log("Generating random prime...");
     while (!probable_prime(rand)) { // Generate random numbers until a prime is found
-        rand = BigInt(rand_bytes(rand_size));
+        rand = rand_bytes(rand_size);
     }
     return rand;
 }
@@ -187,8 +187,7 @@ export function generate_key_pair(size: number): [PublicKey, PrivateKey]{
 
 export function encrypt_message(message: string, public_key: PublicKey) {
     let input_chars = new TextEncoder().encode(message); // Convert the message to an array of numbers
-    let char_buffer = '0x' + Array.from(input_chars).map(x => x.toString(16).padStart(2, '0')).join(''); // Convert each to hex then join
-    let plaintext = BigInt(char_buffer); // Convert the string to a bigint
+    let plaintext = uint8array_to_bigint(input_chars)
     let ciphertext = rsa_encrypt(plaintext, public_key);
     return message_encode(ciphertext);
 }
@@ -196,9 +195,6 @@ export function encrypt_message(message: string, public_key: PublicKey) {
 export function decrypt_message(message: string, private_key: PrivateKey) {
     let ciphertext = message_decode(message);
     let plainint = rsa_decrypt(BigInt(ciphertext), private_key);
-    let plainhex = plainint.toString(16); // Convert the message to hex
-    let chars_array = plainhex.match(/.{1,2}/g);
-    if (chars_array === null) throw new Error("Invalid ciphertext");
-    let plaintext = new TextDecoder().decode(Uint8Array.from(chars_array.map((byte) => parseInt(byte, 16)))); // Convert hex to array of numbers then to a string
+    let plaintext = new TextDecoder().decode(bigint_to_uint8array(plainint)); // Convert bigint to array of numbers then to a string
     return plaintext;
 }
