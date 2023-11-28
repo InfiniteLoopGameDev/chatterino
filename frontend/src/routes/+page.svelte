@@ -17,7 +17,7 @@
 
     let public_key = new encrypt.PublicKey(default_n, 65537n);
     let private_key = new encrypt.PrivateKey(default_n, 30025148644626612648160749230343522231334675156539329375652001692597546836873n);
-    let encrypt_key = new encrypt.PublicKey(default_n, 65537n)
+    let encrypt_key = new encrypt.PublicKey(default_n, 65537n);
 
     function key_gen() {
         let keys = encrypt.generate_key_pair(key_size);

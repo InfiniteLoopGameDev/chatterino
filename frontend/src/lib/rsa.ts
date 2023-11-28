@@ -10,6 +10,14 @@ function rand_bytes(size: number): bigint {
     return BigInt(array.join("")); // Join the values into a string
 }
 
+function rand_bigint(max: bigint, min: bigint = 0n): bigint {
+    let bits = max.toString(2).length
+    bits += 8 - (bits % 8)
+    let range = max - min;
+    let random = rand_bytes(bits)
+    return min + (random % range)
+}
+
 // Miller–Rabin primality test
 // TODO: run multiple times with input k to increase accuracy
 function probable_prime(n: bigint): boolean {
@@ -24,7 +32,7 @@ function probable_prime(n: bigint): boolean {
         ++s
     }
 
-    let base = 2n // TODO: Generate random base between 2 and n - 1
+    let base = rand_bigint(n - 1n, 2n) // TODO: Generate random base between 2 and n - 1
     let x = modular_exponentiation(base, d, n);
 
     if (x == 1n || x == n - 1n) return true
