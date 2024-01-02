@@ -1,79 +1,159 @@
 <script lang="ts">
-    import * as encrypt from "$lib/rsa";
+    import * as rsa from "$lib/rsa";
+    import * as gui from "$lib/gui";
     import { key_export, key_import } from "$lib/utils";
     import * as rc6 from "$lib/rc6";
-    import * as vsh from "$lib/vsh"
-      
-    let en_input: string = "Hello World";
-    let de_input: string = "S74GBCpAjmzjDQOKcgFe6I7j43Vwjwez3KSAjSweQVg=";
+    import * as utils from "$lib/utils"
+    import * as vsh from "$lib/vsh";
 
-    let public_key_import: string;
-    let private_key_import: string;
-    let encrypt_key_import: string;
+    const global_rc6_descriptor = new rc6.RC6Descriptor(64, 14, 16)
 
-    const default_n = 86418891819187277695323277220422635771372010987764722610921129897330728349497n;
-    let key_size: number = 2048;
+    let session_keys: {name: string, key: rc6.RC6Key}[] = [];
+
+    let own_public_key: rsa.PublicKey;
+    let other_public_key: rsa.PublicKey;
+
+    let private_key: rsa.PrivateKey = new rsa.PrivateKey(0n, 0n);
+
+    function load_keys() {
+        let password = gui.password_prompt();
+        let encrypt_key = new rc6.RC6Key(password, global_rc6_descriptor);
+        let key_hash = vsh.hash_uint_array(password);
+        
+        if (key_hash != window.localStorage.getItem("key_hash")) {
+            alert("Incorrect Passkey");
+            return
+        }
+
+        let fetch = window.localStorage.getItem("encrypted_keys");
+        if (fetch === null) {
+            alert("Unable to retrieve keys");
+            return
+        }
+        let encrypted_keys: {name: string, S: [], descriptor: rc6.RC6Descriptor}[] = JSON.parse(fetch);
+
+        encrypted_keys.forEach(element => {
+            let name = rc6.decrypt_message(element.name, encrypt_key);
+            let encrypted_S = utils.object_to_uintarray(element.S)
+            let S = rc6.cbc_decrypt(new BigUint64Array(encrypted_S.buffer), encrypt_key);
+
+            session_keys.push({name: name, key: {S: S, descriptor: element.descriptor}});
+        })
+
+        fetch = window.localStorage.getItem("private_key");
+        if (fetch === null) {
+            alert("Unable to retrieve keys");
+            return
+        }
+        let cipher_private_key = JSON.parse(fetch);
+
+        let cipher = new Uint32Array(cipher_private_key.d);
+        let ciphertext = rc6.cbc_decrypt(new BigUint64Array(cipher.buffer), encrypt_key);
+        let plaintext = new Uint8Array(ciphertext.buffer);
+        plaintext = plaintext.slice(0, plaintext.findIndex((v, i) => {return (v === 0 && plaintext[i+1] === 0)}));
+        private_key.d = utils.uint8array_to_bigint(plaintext);
+        
+        cipher = new Uint32Array(cipher_private_key.n);
+        ciphertext = rc6.cbc_decrypt(new BigUint64Array(cipher.buffer), encrypt_key);
+        plaintext = new Uint8Array(ciphertext.buffer);
+        plaintext = plaintext.slice(0, plaintext.findIndex((v, i) => {return (v === 0 && plaintext[i+1] === 0)}));
+        private_key.n = utils.uint8array_to_bigint(new Uint8Array(plaintext));
+
+        console.log(private_key);
+        console.log(session_keys);
+    }
+
+    function save_keys() {
+        console.log(private_key);
+        console.log(session_keys);
+
+        let password = gui.password_prompt();
+        let encrypt_key = new rc6.RC6Key(password, global_rc6_descriptor);
+        let key_hash = vsh.hash_uint_array(password);
+        
+        window.localStorage.setItem("key_hash", key_hash);
+        
+        let encrypted_keys: {name: string, S: Uint32Array, descriptor: rc6.RC6Descriptor}[] = [];
+
+        session_keys.forEach(element => {
+            let cipher_name = rc6.encrypt_message(element.name, encrypt_key);
+            let cipher_S = rc6.cbc_encrypt(element.key.S, encrypt_key).buffer;
+
+            encrypted_keys.push({name: cipher_name, S: new Uint32Array(cipher_S), descriptor: element.key.descriptor})
+        });
+
+        window.localStorage.setItem("encrypted_keys", JSON.stringify(encrypted_keys))
+
+        let plaintext = utils.bigint_to_uint8array(private_key.d);
+        plaintext = utils.padd_typed_array(plaintext, plaintext.length + 8 - (plaintext.length % 8));
+        let cipher = rc6.cbc_encrypt(new BigUint64Array(plaintext.buffer), encrypt_key);
+        let cipher_d: number[] = [];
+        new Uint32Array(cipher.buffer).forEach((v, i) => {cipher_d[i] = v});
+
+        plaintext = utils.bigint_to_uint8array(private_key.n);
+        plaintext = utils.padd_typed_array(plaintext, plaintext.length + 8 - (plaintext.length % 8));
+        cipher = rc6.cbc_encrypt(new BigUint64Array(plaintext.buffer), encrypt_key);
+        let cipher_n: number[] = [];
+        new Uint32Array(cipher.buffer).forEach((v, i) => {cipher_n[i] = v});
+
+        let cipher_private_key = {d: cipher_d, n: cipher_n};
+
+        window.localStorage.setItem("private_key", JSON.stringify(cipher_private_key))
+    }
+
+    let key_size: number = 256;
     let max_length = key_size / 8;
 
-    let public_key = new encrypt.PublicKey(default_n, 65537n);
-    let private_key = new encrypt.PrivateKey(default_n, 30025148644626612648160749230343522231334675156539329375652001692597546836873n);
-    let encrypt_key = new encrypt.PublicKey(default_n, 65537n);
-
-    function key_gen() {
-        let keys = encrypt.generate_key_pair(key_size);
-        public_key = keys[0];
-        private_key = keys[1];
+    function generate_random_rc6_key(): rc6.RC6Key {
+        let rc6descript = new rc6.RC6Descriptor(64, 14, 16);
+        let length = (2 * rc6descript.rounds + 3) + 8 - (2 * rc6descript.rounds + 3) % 8
+        let buffer = new ArrayBuffer(length)
+        let randomVals = new BigUint64Array(buffer);
+        crypto.getRandomValues(randomVals);
+        let key = new rc6.RC6Key(randomVals, rc6descript)
+        return key;
     }
 
-    function import_keys() {
-        // @ts-ignore As long as user doens't switch things around, this should be fine (Trust me bro)
-        public_key = key_import(public_key_import);
-        // @ts-ignore 
-        private_key = key_import(private_key_import);
-        // @ts-ignore
-        encrypt_key = key_import(encrypt_key_import);
+    [own_public_key, private_key] = rsa.generate_key_pair(key_size);
+
+    session_keys.push({name: "test", key: generate_random_rc6_key()});
+
+    console.log("Keygen Finished")
+
+
+    function output_encrypted() {
+
     }
 
-    $: en_output = encrypt.encrypt_message(en_input, encrypt_key)
-    $: de_output = encrypt.decrypt_message(de_input, private_key)
+    function output_decrypted() {
+        
+    }
 
-    $: public_key_export = key_export(public_key);
-    $: encrypt_key_export = key_export(encrypt_key);
-    $: private_key_export = key_export(private_key);
 
-    let rc6descript = new rc6.RC6Descriptor(64, 14, 16)
-    let rc6key = new rc6.RC6Key(new BigUint64Array([25n, 44n, 48n, 6611n]), rc6descript);
-    let rc6message = "Hello World";
-    let rc6cipher = rc6.encrypt_message(rc6message, rc6key)
-    console.log(rc6cipher);
-    console.log(rc6.decrypt_message(rc6cipher, rc6key));
+    let isDropdownMenuOpen = false
 
-    console.log(vsh.hash_string("Hi Bob!"))
+    function handleDropdownClick() {
+        isDropdownMenuOpen = !isDropdownMenuOpen
+    }
+
+    type DivFocusEvent = FocusEvent & { currentTarget: HTMLDivElement };
+    function handleDropdownMenuFocusLoss({ relatedTarget, currentTarget }: DivFocusEvent) {
+        if (relatedTarget instanceof HTMLElement && currentTarget.contains(relatedTarget)) return
+        isDropdownMenuOpen = false
+    }
+
+    function handleDropdownMenuFocusGain() {
+        isDropdownMenuOpen = true
+    }
 </script>
 
+<div on:focusout={handleDropdownMenuFocusLoss}>
+    <input on:focusin={handleDropdownMenuFocusGain}> <button on:click={handleDropdownClick}> > </button>
+    <ul style:visibility={isDropdownMenuOpen ? 'visible' : 'hidden'}>
+        <button on:click={()=>alert("Wowwee")}>New Key</button>
+    </ul>
 
-<h1>Options</h1>
-<h1>Encryption</h1>
-<input bind:value={en_input}>
-<p>{en_output}</p>
-<h1>Decryption</h1>
-<input bind:value={de_input}>
-<p>{de_output}</p>
-<h1>Keys</h1>
-<p>Private: <input bind:value={private_key.n}>,<input bind:value={private_key.d}></p>
-<p>Public: <input bind:value={public_key.n}>,<input bind:value={public_key.e}></p>
-<button on:click={key_gen}>Generate Key <input type="number" bind:value={key_size}></button>
-<br>
-<h1>Export Keys</h1>
-Your Keys:
-<p>Public key: <textarea bind:value={public_key_export} rows="4" cols="55"></textarea></p>
-<p>Private key: <textarea bind:value={private_key_export} rows="4" cols="55"></textarea></p>
-Others key:
-<p>Public key: <textarea bind:value={encrypt_key_export} rows="4" cols="55"></textarea></p>
-<h1>Import Keys</h1>
-Your Keys:
-<p>Public key: <textarea bind:value={public_key_import} rows="4" cols="55"></textarea></p>
-<p>Private key: <textarea bind:value={private_key_import} rows="4" cols="55"></textarea></p>
-Others key:
-<p>Public key: <textarea bind:value={encrypt_key_import} rows="4" cols="55"></textarea></p>
-<button on:click={import_keys}>Import</button>
+    <button on:click={save_keys}>Save keys</button>
+    <button on:click={load_keys}>Load keys</button>
+</div>
+<textarea on:change={output_decrypted}></textarea>

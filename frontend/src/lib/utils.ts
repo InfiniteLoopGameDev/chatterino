@@ -6,8 +6,9 @@ type IArray = ArrayLike<any> & {
     slice(begin: number, end?: number): IArray;
 }
 
-type TypedArray = ArrayLike<any> & {
+export type TypedArray = ArrayLike<any> & {
     BYTES_PER_ELEMENT: number;
+    buffer: ArrayBuffer;
     set(array: ArrayLike<number | bigint>, offset?: number): void;
     fill(value: number | bigint, start?: number, end?: number): void;
 };
@@ -122,4 +123,18 @@ export function padd_typed_array<T extends TypedArray>(array: T, length: number)
     paddedArray.set(array);
     paddedArray.fill(array[0].constructor(0), array.length);
     return paddedArray
+}
+
+export function object_to_uintarray(obj: object): Uint32Array {
+    let untyped_array = []
+    let current_index = 0
+    let current_element = obj[current_index.toString()];
+
+    while (current_element != undefined) {
+        untyped_array.push(current_element);
+        current_index++;
+        current_element = obj[current_index.toString()];
+    }
+
+    return new Uint32Array(untyped_array);
 }

@@ -1,4 +1,5 @@
 import { split_chunks, uint8array_to_bigint } from "./utils";
+import type { TypedArray } from "./utils";
 
 export const N = 13505230252136909642484357485922660997703714661558643085625570609005026648618736836130702340065843629405580691114455027019893927926634642153529884002226841727229790564330636423292332332262882840266450188232435927005016785904459664198486890246640937094945202451618472795872027188330092602205275655246943129978779n
 const K = 132;
@@ -41,6 +42,12 @@ export function hash(message: bigint, k: number, n: bigint): bigint {
     })
 
     return x;
+}
+
+export function hash_uint_array<T extends TypedArray>(message: T) {
+    let uint8 = new Uint8Array(message.buffer);
+    let int = uint8array_to_bigint(uint8);
+    return hash(int, K, N).toString(16);
 }
 
 export function hash_string(message: string) {

@@ -53,6 +53,7 @@ function rand_prime(size: number) {
     rand |= 1n; // Set the least significant bit (Used to ensure the number is odd (even numbers are not prime)))
     console.log("Generating random prime...");
     while (!probable_prime(rand)) { // Generate random numbers until a prime is found
+        console.log("Trying")
         rand = rand_bytes(rand_size);
     }
     return rand;
