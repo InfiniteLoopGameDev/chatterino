@@ -129,6 +129,14 @@
         
     }
 
+    function rc6keygen() {
+        let name = prompt("Enter Key Name");
+        if (name === null) { name = "" };
+        let rsa_public = prompt("Enter Public Key of Recipient")
+        let key = generate_random_rc6_key();
+        session_keys.push({name: name, key: key});
+        rsa.encrypt_message(JSON.stringify(key), rsa_public);
+    }
 
     let isDropdownMenuOpen = false
 
@@ -150,7 +158,7 @@
 <div on:focusout={handleDropdownMenuFocusLoss}>
     <input on:focusin={handleDropdownMenuFocusGain}> <button on:click={handleDropdownClick}> > </button>
     <ul style:visibility={isDropdownMenuOpen ? 'visible' : 'hidden'}>
-        <button on:click={()=>alert("Wowwee")}>New Key</button>
+        <button on:click={rc6keygen}>New Key</button>
     </ul>
 
     <button on:click={save_keys}>Save keys</button>
