@@ -19,8 +19,7 @@ function rand_bigint(max: bigint, min: bigint = 0n): bigint {
 }
 
 // Miller–Rabin primality test
-// TODO: run multiple times with input k to increase accuracy
-function probable_prime(n: bigint): boolean {
+function probable_prime(n: bigint, k: number): boolean {
     if (n === 2n || n === 3n) return true // Doesn't work for 2 or 3
     if (n % 2n === 0n || n < 2n) return false // Even numbers are not prime, don't check numbers less than 2
 
@@ -32,18 +31,23 @@ function probable_prime(n: bigint): boolean {
         ++s
     }
 
-    let base = rand_bigint(n - 1n, 2n) // TODO: Generate random base between 2 and n - 1
-    let x = modular_exponentiation(base, d, n);
+    for (let _r = 0; _r < k; _r++) {
+        let base = rand_bigint(n - 1n, 2n)
+        let x = modular_exponentiation(base, d, n);
+        let y;
 
-    if (x == 1n || x == n - 1n) return true
+        if (x == 1n || x == n - 1n) return true
 
-    for (let i = 0; i < (s - 1n); i++) {
-        x = (x * x) % n
+        for (let i = 0; i < s ; i++) {
+            y = (x * x) % n
 
-        if (x === 1n) return false
-        if (x === n - 1n) return true
+            if (y === 1n && x != 1n && x != n - 1n) return false
+        }
+        if (y != 1n) {
+            return false
+        }
     }
-    return false
+    return true
 }
 
 function rand_prime(size: number) {
@@ -52,7 +56,7 @@ function rand_prime(size: number) {
     rand |= 1n << (BigInt(size) - 1n); // Set the most significant bit (Used to ensure the number is the correct size)
     rand |= 1n; // Set the least significant bit (Used to ensure the number is odd (even numbers are not prime)))
     console.log("Generating random prime...");
-    while (!probable_prime(rand)) { // Generate random numbers until a prime is found
+    while (!probable_prime(rand, 64)) { // Generate random numbers until a prime is found
         console.log("Trying")
         rand = rand_bytes(rand_size);
     }

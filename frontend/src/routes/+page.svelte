@@ -15,6 +15,8 @@
 
     let private_key: rsa.PrivateKey = new rsa.PrivateKey(0n, 0n);
 
+    let active_key: {name: string, key: rc6.RC6Key};
+
     function load_keys() {
         let password = gui.password_prompt();
         let encrypt_key = new rc6.RC6Key(password, global_rc6_descriptor);
@@ -116,7 +118,8 @@
 
     [own_public_key, private_key] = rsa.generate_key_pair(key_size);
 
-    session_keys.push({name: "test", key: generate_random_rc6_key()});
+    session_keys.push({name: "test1", key: generate_random_rc6_key()});
+    session_keys.push({name: "test2", key: generate_random_rc6_key()});
 
     console.log("Keygen Finished")
 
@@ -137,8 +140,16 @@
         session_keys.push({name: name, key: key});
         rsa.encrypt_message(JSON.stringify(key), rsa_public);
     }
+    function setActiveSessionKey(id: number) {
+        active_key = session_keys[id];
+    }
+
 
     let isDropdownMenuOpen = false
+
+    let searchQuery: string = "";
+
+    $: filtered_list = session_keys.filter(({name}) => name.includes(searchQuery))
 
     function handleDropdownClick() {
         isDropdownMenuOpen = !isDropdownMenuOpen
@@ -156,8 +167,11 @@
 </script>
 
 <div on:focusout={handleDropdownMenuFocusLoss}>
-    <input on:focusin={handleDropdownMenuFocusGain}> <button on:click={handleDropdownClick}> > </button>
+    <input type="search" on:focusin={handleDropdownMenuFocusGain} bind:value={searchQuery}> <button on:click={handleDropdownClick}> > </button>
     <ul style:visibility={isDropdownMenuOpen ? 'visible' : 'hidden'}>
+        {#each filtered_list as {name}, i}
+            <button on:click={()=>setActiveSessionKey(i)}>{name}</button><br>
+        {/each}
         <button on:click={rc6keygen}>New Key</button>
     </ul>
 
